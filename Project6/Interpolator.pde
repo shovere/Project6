@@ -14,6 +14,8 @@ abstract class Interpolator
   void SetAnimation(Animation anim)
   {
     animation = anim;
+    currentFrame = anim.keyFrames.size()-1;
+    nextFrame = 0;
   }
   
   void SetFrameSnapping(boolean snap)
@@ -29,10 +31,6 @@ abstract class Interpolator
     // If so, adjust by an appropriate amount to loop correctly
    float prevTime = currentTime;
    currentTime += time;
-   
-   
-
-  
    //handle reverse animation
    if(currentTime < prevTime){
        
@@ -85,7 +83,7 @@ abstract class Interpolator
 class ShapeInterpolator extends Interpolator
 {
   // The result of the data calculations - either snapping or interpolating
-  PShape currentShape;
+  PShape currentShape; 
   
   // Changing mesh colors
   color fillColor;
@@ -102,15 +100,20 @@ class ShapeInterpolator extends Interpolator
      float timeRatio = 0;
      UpdateTime(time);
      if(time > 0){
-       timeRatio = 1-((nextAnimFrame.time - currentTime)/nextAnimFrame.time);
+       if(currentTime >= currAnimFrame.time ){
+         timeRatio = (currentTime-currAnimFrame.time)/(nextAnimFrame.time-currAnimFrame.time);
+       } 
+       else {
+           timeRatio = (currentTime/nextAnimFrame.time);
+       }
+     
      }
      else {
        timeRatio = (currAnimFrame.time - currentTime)/currAnimFrame.time;
        if(timeRatio < 0)
          timeRatio = 1;
      }
-     
-     
+    
      
      currentShape = createShape();
      currentShape.setFill(fillColor);
@@ -133,7 +136,7 @@ class ShapeInterpolator extends Interpolator
          }
          
          //println(x,y,z);
-         currentShape.vertex(x,y,z);
+         currentShape.vertex(x,y,z); 
        }
        currentShape.endShape();
      
@@ -148,7 +151,33 @@ class PositionInterpolator extends Interpolator
   
   void Update(float time)
   {
-    // The same type of process as the ShapeInterpolator class... except
-    // this only operates on a single point
+       UpdateTime(time);
+       
+       KeyFrame currAnimFrame = animation.keyFrames.get(currentFrame);
+       KeyFrame nextAnimFrame = animation.keyFrames.get(nextFrame);
+       float timeRatio = 0;
+       if(time > 0){
+           if(currentTime > currAnimFrame.time)
+             timeRatio = (currentTime-currAnimFrame.time)/(nextAnimFrame.time-currAnimFrame.time);
+           else 
+             timeRatio = (currentTime/nextAnimFrame.time);
+       }
+       else {
+         timeRatio = (currAnimFrame.time - currentTime)/currAnimFrame.time;
+       }
+       float x = 0;
+         float y = 0;
+         float z = 0;
+         //println(timeRatio);
+       if(!snapping){
+          
+          x = lerp(currAnimFrame.points.get(0).x,nextAnimFrame.points.get(0).x, timeRatio);
+          y = lerp(currAnimFrame.points.get(0).y,nextAnimFrame.points.get(0).y, timeRatio);
+           z = lerp(currAnimFrame.points.get(0).z,nextAnimFrame.points.get(0).z, timeRatio);
+           currentPosition = new PVector(x,y,z);
+       }
+       else {
+         currentPosition = new PVector(currAnimFrame.points.get(0).x, currAnimFrame.points.get(0).y, currAnimFrame.points.get(0).z);
+       }
   }
 }

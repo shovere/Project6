@@ -22,9 +22,9 @@ CameraController controller = new CameraController();
 class CameraController {
    PVector position; 
    PVector target = new PVector(0,0,0);
-   float FOV = 140;
-   float theta = 0;
-   float phi = 0;
+   float FOV = 110;
+   float theta = 90;
+   float phi =0;
    float radius;
    int xClickedStart = -1;
    int yClickedStart = -1;
@@ -33,7 +33,7 @@ class CameraController {
    int movementType;
    
    CameraController(){
-     this.position = new PVector(width/2, -height/2, (height/2.0) / tan(PI*30.0 / 180.0));
+     this.position = new PVector(width/2, -height, (height/2.0) / tan(PI*30.0 / 180.0));
      this.radius = abs(target.dist(position));
      this.theta = (acos(position.y/radius)*180)/PI;
      this.phi = (acos(position.x/(radius*sin(radians(theta))))*180)/PI;
@@ -98,10 +98,71 @@ void setup()
   // ahead of the previous one
   
   /*====== Create Animations For Spheroid ======*/
-  //Animation spherePos = new Animation();
-  // Create and set keyframes
-  //spherePosition.SetAnimation(spherePos);
+  Animation spherePos = new Animation();
   
+  for(int i =0; i < 4; i++){
+    KeyFrame kf = new KeyFrame();
+    switch(i){
+      case 0:
+         kf.time = 1.0f;
+         kf.points.add(new PVector(-100,0,100));
+         break;
+      case 1:
+         kf.time = 2.0f;
+         kf.points.add(new PVector(-100,0,-100));
+         break;
+      case 2:
+         kf.time = 3.0f;
+         kf.points.add(new PVector(100,0,-100));
+         break;
+      case 3:
+         kf.time = 4.0f;
+         kf.points.add(new PVector(100,0,100));
+         break;
+    }
+    spherePos.keyFrames.add(kf);
+  }
+  spherePosition.SetAnimation(spherePos);
+  
+  int cf = 0;
+  float ct = 0;
+  for(int i =0; i< 11; i++){
+    float zPos = -100;
+    Animation boxPos = new Animation();
+    for(int j = 0; j< 4; j++){
+      if(j < 2)
+        zPos += 100;
+      else 
+        zPos -= 100;
+      KeyFrame kf = new KeyFrame();
+      kf.time = float((j+1))/2.0f;
+      //println(kf.time);
+      kf.points.add(new PVector(-100 + i*20, 0, zPos));
+      boxPos.keyFrames.add(kf);
+    }
+    cubes.add(new PositionInterpolator());
+    cubes.get(i).SetAnimation(boxPos);
+   
+    cubes.get(i).currentTime = ct*0.25;
+    
+    if(cf > 3){
+        cf = 0;
+        ct = 0;
+      }
+      cubes.get(i).currentFrame = cf;
+      cubes.get(i).nextFrame = cf+1;
+      if(cf == 3){
+        cubes.get(i).nextFrame = 0;
+      }
+    if(i%2 == 0){
+       cf++;
+    }
+    
+       ct++;
+    if((i % 2) > 0) {
+      cubes.get(i).snapping = true;
+    }
+  }
 
 }
 
@@ -142,17 +203,32 @@ void draw()
   popMatrix();
   
   /*====== Draw Spheroid ======*/
-  //spherePosition.Update(playbackSpeed);
-  //sphereForward.fillColor = color(39, 110, 190);
-  //sphereForward.Update(playbackSpeed);
-  //PVector pos = spherePosition.currentPosition;
+  spherePosition.Update(playbackSpeed);
+  sphereForward.fillColor = color(39, 110, 190);
+  sphereForward.Update(playbackSpeed);
+  PVector pos = spherePosition.currentPosition;
   //println(pos);
-  //pushMatrix();
-  //shape(sphereForward.currentShape);
-  //popMatrix();
+  pushMatrix();
+  translate(pos.x, pos.y, pos.z);
+  shape(sphereForward.currentShape);
+  popMatrix();
   
   /*====== TODO: Update and draw cubes ======*/
   // For each interpolator, update/draw
+  for(int i =0; i < cubes.size(); i++){
+    cubes.get(i).Update(playbackSpeed);
+    pos = cubes.get(i).currentPosition;
+    pushMatrix();
+    translate(pos.x, pos.y, pos.z);
+    if(i%2 == 0){
+      fill(color(255,0,0));
+    }
+    else {
+      fill(color(255,255,0));
+    }
+    box(20,20,20);
+    popMatrix();
+  }
 }
 
 void mouseWheel(MouseEvent event)
@@ -185,7 +261,7 @@ Animation ReadAnimationFromFile(String fileName)
       }
       kf.time = time;
       animation.keyFrames.add(kf);
-    }
+    } 
   }
    catch (IOException e){
      e.printStackTrace();
